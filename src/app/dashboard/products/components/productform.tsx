@@ -7,7 +7,6 @@ import { Product } from "./producttable";
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://127.0.0.1:8000";
 
-// MDEditor seperti di CareerForm
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 
 const resolveImageUrl = (img: string) => {
@@ -31,7 +30,6 @@ export default function ProductForm({ product, onChange }: Props) {
   const [packagePrice, setPackagePrice] = useState<number>(0);
   const [packageDesc, setPackageDesc] = useState("");
 
-  // INIT sekali saja dari product.include, tidak di-reset lagi oleh useEffect
   const [includeText, setIncludeText] = useState<string>(
     (product.include || []).join("\n")
   );
@@ -57,7 +55,6 @@ export default function ProductForm({ product, onChange }: Props) {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-      {/* Title + Subtitle */}
       <div className="grid grid-cols-2 gap-4">
         <input
           type="text"
@@ -77,7 +74,6 @@ export default function ProductForm({ product, onChange }: Props) {
         />
       </div>
 
-      {/* Description biasa */}
       <div>
         <label className="block text-sm font-medium">Description</label>
         <textarea
@@ -90,7 +86,6 @@ export default function ProductForm({ product, onChange }: Props) {
         />
       </div>
 
-      {/* Images */}
       <div>
         <label className="block text-sm font-medium">Images (max 4)</label>
         <input
@@ -132,7 +127,6 @@ export default function ProductForm({ product, onChange }: Props) {
         </div>
       </div>
 
-      {/* Detail teknis */}
       <div className="grid grid-cols-2 gap-4">
         <input
           type="text"
@@ -184,7 +178,6 @@ export default function ProductForm({ product, onChange }: Props) {
         />
       </div>
 
-      {/* INCLUDE pakai MDEditor ala CareerForm */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Include (Markdown)
@@ -196,7 +189,6 @@ export default function ProductForm({ product, onChange }: Props) {
               const v = value || "";
               setIncludeText(v);
 
-              // tetap simpan ke product.include sebagai array per baris
               const lines = v
                 .split("\n")
                 .map((s) => s.trim())
@@ -208,7 +200,6 @@ export default function ProductForm({ product, onChange }: Props) {
               });
             }}
             height={200}
-            // kalau masih muncul 2 panel, boleh tambah: preview="edit"
           />
         </div>
         <div className="mt-1 text-xs text-gray-500">
@@ -229,7 +220,6 @@ export default function ProductForm({ product, onChange }: Props) {
         </div>
       </div>
 
-      {/* Package Options */}
       <div>
         <label className="block text-sm font-medium">Package Options</label>
         <div className="grid grid-cols-3 gap-2">
@@ -293,7 +283,6 @@ export default function ProductForm({ product, onChange }: Props) {
         </ul>
       </div>
 
-      {/* Base Price */}
       <div>
         <label className="block text-sm font-medium">Base Price</label>
         <input
