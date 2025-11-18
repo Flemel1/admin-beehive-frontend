@@ -24,32 +24,65 @@ const makeEmptyProduct = (): Product => ({
   basePrice: 0,
 });
 
-export default function Page() {
+export default function ProductsPage() {
   const [form, setForm] = useState<Product>(makeEmptyProduct());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!form.title.trim()) {
+      Swal.fire({
+        title: "Error!",
+        text: "Product Title is required!",
+        icon: "error",
+        confirmButtonColor: "#d33",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      Swal.fire({
+        title: "Unauthorized",
+        text: "Please log in again.",
+        icon: "warning",
+        confirmButtonColor: "#134280",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    const payload = {
+      title: form.title.trim(),
+      subtitle: form.subtitle || null,
+      description: form.description || null,
+      type: form.type || null,
+      wingspan: form.wingspan || null,
+      flightEndurance: form.flightEndurance || null,
+      flightRange: form.flightRange || null,
+      flightHeight: form.flightHeight || null,
+      otherDetails: form.otherDetails || null,
+      basePrice: Number(form.basePrice) || 0,
+      images: form.images.filter(Boolean),
+      include: form.include.filter(Boolean),
+      packageOptions: (form.packageOptions || [])
+        .map((pkg) => ({
+          name: pkg.name?.trim(),
+          price: Number(pkg.price) || 0,
+          description: pkg.description?.trim() || null,
+        }))
+        .filter((pkg) => pkg.name),
+      financing: form.financing,
+    };
+
     try {
-      setIsSubmitting(true);
-
-      const token = localStorage.getItem("token");
-      if (!token) {
-        Swal.fire("Error", "Token tidak ditemukan. Silakan login dulu.", "error");
-        setIsSubmitting(false);
-        return;
-      }
-
-      const { id, ...rest } = form;
-
-      const payload = {
-        ...rest,
-        basePrice: Number(rest.basePrice) || 0,
-      };
-
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
+      const res = await fetch(`${API_URL}/api/products`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -59,46 +92,32 @@ export default function Page() {
         body: JSON.stringify(payload),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const errorBody = await res.json().catch(() => ({}));
-        console.error("Error create product:", errorBody);
-        Swal.fire("Error", "Gagal menambahkan produk.", "error");
-        setIsSubmitting(false);
-        return;
+        const msg =
+          data.message ||
+          Object.values(data.errors || {}).flat().join(", ") ||
+          "Failed to save product";
+        throw new Error(msg);
       }
 
-      const json = await res.json();
-      const created = json.data;
-
-      const newProduct: Product = {
-        id: created.id,
-        title: created.title,
-        subtitle: created.subtitle ?? "",
-        images: created.images ?? [],
-        description: created.description ?? "",
-        type: created.type ?? "",
-        wingspan: created.wingspan ?? "",
-        flightEndurance: created.flight_endurance ?? "",
-        flightRange: created.flight_range ?? "",
-        flightHeight: created.flight_height ?? "",
-        otherDetails: created.other_details ?? "",
-        include: created.include_items ?? [],
-        packageOptions: created.package_options ?? [],
-        financing: created.financing ?? [],
-        basePrice: created.base_price ?? 0,
-      };
-
-      console.log("Produk berhasil dibuat:", newProduct);
+      Swal.fire({
+        title: "Success!",
+        text: "Product has been successfully added.",
+        icon: "success",
+        confirmButtonColor: "#134280",
+      });
 
       setForm(makeEmptyProduct());
-
       setRefreshKey((prev) => prev + 1);
-
-      Swal.fire("Success", "Product created successfully.", "success");
-
-    } catch (err) {
-      console.error(err);
-      Swal.fire("Error", "Terjadi kesalahan saat menyimpan produk.", "error");
+    } catch (err: any) {
+      Swal.fire({
+        title: "Failed!",
+        text: err.message || "An error occurred while saving the product.",
+        icon: "error",
+        confirmButtonColor: "#d33",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -106,33 +125,66 @@ export default function Page() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        
+      <div className="space-y-8 p-6">
+        {/* Page Header */}
         <div>
-          <h1 className="text-xl font-semibold text-gray-800">
-            Manage Products
-          </h1>
-          <p className="text-gray-600 text-sm">
-            Add new products or view the existing ones.
+          <h1 className="text-2xl font-bold text-gray-800">Manage Products</h1>
+          <p className="text-gray-600 mt-1">
+            Add new products or manage existing ones.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <ProductForm product={form} onChange={setForm} />
+        {/* Add Product Form Card */}
+        <div className="bg-white shadow-md rounded-xl p-8">
+          <h2 className="text-xl font-bold text-gray-800 mb-6">
+            Add New Product
+          </h2>
 
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:opacity-60"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Saving..." : "Save Product"}
-            </button>
-          </div>
-        </form>
+          <form onSubmit={handleSubmit} className="space-y-7">
+            <ProductForm product={form} onChange={setForm} />
 
-        <ProductTable key={refreshKey} />
+            {/* Submit Button - Identical to Projects & Articles */}
+            <div className="flex justify-end pt-4">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-[#134280] text-white px-8 py-3 rounded-md hover:bg-[#0f2e5c] transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 shadow-md"
+              >
+                {isSubmitting ? (
+                  <>
+                    <svg
+                      className="animate-spin h-5 w-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v8z"
+                      />
+                    </svg>
+                    Saving...
+                  </>
+                ) : (
+                  "Save Product"
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
 
+        {/* Products Table Card */}
+        <div className="mt-10 bg-white shadow-md rounded-xl overflow-hidden">
+          <ProductTable key={refreshKey} />
+        </div>
       </div>
     </DashboardLayout>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Edit, Trash, Plus } from "lucide-react";
 import Swal from "sweetalert2";
 import AddProductModal from "./addproductmodal";
 import EditProductModal from "./editproductmodal";
@@ -32,7 +33,7 @@ export interface Product {
 interface ApiPackageOption {
     name: string;
     price: number;
-    description: string;
+    description: string | null;
 }
 
 interface ApiProduct {
@@ -53,14 +54,13 @@ interface ApiProduct {
     base_price: number | null;
 }
 
-interface ProductIndexResponse {
+interface ApiResponse {
     data: ApiProduct[];
-    current_page: number;
-    last_page: number;
-    total: number;
 }
 
-const mapApiProductToProduct = (api: ApiProduct): Product => ({
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
+
+const mapApiToProduct = (api: ApiProduct): Product => ({
     id: api.id,
     title: api.title,
     subtitle: api.subtitle ?? "",
@@ -76,53 +76,42 @@ const mapApiProductToProduct = (api: ApiProduct): Product => ({
     packageOptions: (api.package_options ?? []).map((p) => ({
         name: p.name,
         price: p.price,
-        description: p.description,
+        description: p.description ?? "",
     })),
-    financing: api.financing ?? [],
+    financing: api.financing ?? ["Cash", "Installment"],
     basePrice: api.base_price ?? 0,
 });
 
-const API_BASE =
-    process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000/api";
-
 export default function ProductTable() {
     const [products, setProducts] = useState<Product[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
-    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+    const [loading, setLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
-
-    const getToken = () => {
-        if (typeof window === "undefined") return null;
-        return localStorage.getItem("token");
-    };
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
     const fetchProducts = async () => {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            Swal.fire("Unauthorized", "Please log in first.", "warning");
+            return;
+        }
+
         try {
             setLoading(true);
-            const token = getToken();
-
-            const res = await fetch(`${API_BASE}/products`, {
+            const res = await fetch(`${API_BASE}/api/products`, {
                 headers: {
                     Accept: "application/json",
-                    Authorization: token ? `Bearer ${token}` : "",
+                    Authorization: `Bearer ${token}`,
                 },
             });
 
-            if (!res.ok) {
-                throw new Error(`Failed to fetch products: ${res.status}`);
-            }
+            if (!res.ok) throw new Error("Failed to load products");
 
-            const json: ProductIndexResponse = await res.json();
-
-            const mapped = json.data.map(mapApiProductToProduct);
+            const json: ApiResponse = await res.json();
+            const mapped = json.data.map(mapApiToProduct);
             setProducts(mapped);
-        } catch (err: any) {
+        } catch (err) {
             console.error(err);
-            Swal.fire(
-                "Error",
-                err.message || "Failed to load products from server.",
-                "error"
-            );
+            Swal.fire("Error", "Failed to load products", "error");
         } finally {
             setLoading(false);
         }
@@ -132,109 +121,8 @@ export default function ProductTable() {
         fetchProducts();
     }, []);
 
-    const handleAdd = async (newProduct: Omit<Product, "id">) => {
-        try {
-            const token = getToken();
-
-            const res = await fetch(`${API_BASE}/products`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Accept: "application/json",
-                    Authorization: token ? `Bearer ${token}` : "",
-                },
-                body: JSON.stringify({
-                    title: newProduct.title,
-                    subtitle: newProduct.subtitle,
-                    description: newProduct.description,
-                    type: newProduct.type,
-                    wingspan: newProduct.wingspan,
-                    flightEndurance: newProduct.flightEndurance,
-                    flightRange: newProduct.flightRange,
-                    flightHeight: newProduct.flightHeight,
-                    otherDetails: newProduct.otherDetails,
-                    basePrice: newProduct.basePrice,
-                    images: newProduct.images,
-                    include: newProduct.include,
-                    packageOptions: newProduct.packageOptions,
-                    financing: newProduct.financing,
-                }),
-            });
-
-            if (!res.ok) {
-                const errBody = await res.json().catch(() => ({}));
-                console.error(errBody);
-                throw new Error("Failed to create product.");
-            }
-
-            const json = await res.json();
-            const createdApi: ApiProduct = json.data;
-            const created = mapApiProductToProduct(createdApi);
-            setProducts((prev) => [...prev, created]);
-            Swal.fire("Success", "Product created successfully.", "success");
-        } catch (err: any) {
-            Swal.fire(
-                "Error",
-                err.message || "Failed to create product.",
-                "error"
-            );
-        }
-    };
-
-    const handleUpdate = async (updated: Product) => {
-        try {
-            const token = getToken();
-
-            const res = await fetch(`${API_BASE}/products/${updated.id}`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Accept: "application/json",
-                    Authorization: token ? `Bearer ${token}` : "",
-                },
-                body: JSON.stringify({
-                    title: updated.title,
-                    subtitle: updated.subtitle,
-                    description: updated.description,
-                    type: updated.type,
-                    wingspan: updated.wingspan,
-                    flightEndurance: updated.flightEndurance,
-                    flightRange: updated.flightRange,
-                    flightHeight: updated.flightHeight,
-                    otherDetails: updated.otherDetails,
-                    basePrice: updated.basePrice,
-                    images: updated.images,
-                    include: updated.include,
-                    packageOptions: updated.packageOptions,
-                    financing: updated.financing,
-                }),
-            });
-
-            if (!res.ok) {
-                const errBody = await res.json().catch(() => ({}));
-                console.error(errBody);
-                throw new Error("Failed to update product.");
-            }
-
-            const json = await res.json();
-            const apiUpdated: ApiProduct = json.data;
-            const mapped = mapApiProductToProduct(apiUpdated);
-
-            setProducts((prev) =>
-                prev.map((p) => (p.id === mapped.id ? mapped : p))
-            );
-            Swal.fire("Success", "Product updated successfully.", "success");
-        } catch (err: any) {
-            Swal.fire(
-                "Error",
-                err.message || "Failed to update product.",
-                "error"
-            );
-        }
-    };
-
-    const handleDelete = (id: number) => {
-        Swal.fire({
+    const handleDelete = async (id: number) => {
+        const result = await Swal.fire({
             title: "Are you sure?",
             text: "This product will be permanently deleted.",
             icon: "warning",
@@ -242,105 +130,119 @@ export default function ProductTable() {
             confirmButtonColor: "#134280",
             cancelButtonColor: "#d33",
             confirmButtonText: "Yes, delete it!",
-        }).then(async (result) => {
-            if (!result.isConfirmed) return;
-
-            try {
-                const token = getToken();
-
-                const res = await fetch(`${API_BASE}/products/${id}`, {
-                    method: "DELETE",
-                    headers: {
-                        Accept: "application/json",
-                        Authorization: token ? `Bearer ${token}` : "",
-                    },
-                });
-
-                if (!res.ok) {
-                    const errBody = await res.json().catch(() => ({}));
-                    console.error(errBody);
-                    throw new Error("Failed to delete product.");
-                }
-
-                setProducts((prev) => prev.filter((p) => p.id !== id));
-                Swal.fire("Deleted!", "The product has been deleted.", "success");
-            } catch (err: any) {
-                Swal.fire(
-                    "Error",
-                    err.message || "Failed to delete product.",
-                    "error"
-                );
-            }
         });
+
+        if (!result.isConfirmed) return;
+
+        const token = localStorage.getItem("token");
+        try {
+            const res = await fetch(`${API_BASE}/api/products/${id}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (!res.ok) throw new Error("Delete failed");
+
+            setProducts((prev) => prev.filter((p) => p.id !== id));
+            Swal.fire("Deleted!", "Product has been deleted.", "success");
+        } catch {
+            Swal.fire("Error", "Failed to delete product", "error");
+        }
     };
 
-
     return (
-        <div className="bg-white p-6 rounded-lg shadow-md mt-6">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold">Products</h2>
+        <div className="bg-white shadow-md rounded-xl overflow-hidden">
+            {/* Header + Add Button */}
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+                <h2 className="text-xl font-bold text-gray-800">Product List</h2>
                 <button
                     onClick={() => setIsAdding(true)}
-                    className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-[#134280] text-white rounded-lg hover:bg-[#0f2e5c] transition font-medium text-sm shadow-md"
                 >
+                    <Plus className="w-5 h-5" />
                     Add Product
                 </button>
             </div>
 
+            {/* Loading State */}
             {loading ? (
-                <div className="p-4 text-center text-gray-500">Loading...</div>
+                <div className="p-12 text-center text-gray-500 italic">
+                    Loading products...
+                </div>
             ) : (
-                <table className="w-full border border-gray-200 rounded-md overflow-hidden">
-                    <thead className="bg-gray-100">
-                        <tr>
-                            <th className="p-2 text-left">Title</th>
-                            <th className="p-2 text-left">Type</th>
-                            <th className="p-2 text-left">Base Price</th>
-                            <th className="p-2 text-left">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {products.length === 0 && (
-                            <tr>
-                                <td
-                                    colSpan={4}
-                                    className="text-center p-4 text-gray-500"
-                                >
-                                    No products yet
-                                </td>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="bg-gray-100 text-left text-gray-700 font-medium">
+                                <th className="px-6 py-4">Title</th>
+                                <th className="px-6 py-4">Subtitle</th>
+                                <th className="px-6 py-4">Type</th>
+                                <th className="px-6 py-4 text-right">Base Price</th>
+                                <th className="px-6 py-4 text-center">Actions</th>
                             </tr>
-                        )}
-                        {products.map((p) => (
-                            <tr key={p.id} className="border-t">
-                                <td className="p-2">{p.title}</td>
-                                <td className="p-2">{p.type}</td>
-                                <td className="p-2">
-                                    Rp{p.basePrice.toLocaleString("id-ID")}
-                                </td>
-                                <td className="p-2 flex gap-2">
-                                    <button
-                                        onClick={() => setEditingProduct(p)}
-                                        className="px-3 py-1 bg-blue-500 text-white rounded-md"
+                        </thead>
+                        <tbody>
+                            {products.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="p-12 text-center text-gray-500 italic">
+                                        No products available
+                                    </td>
+                                </tr>
+                            ) : (
+                                products.map((product) => (
+                                    <tr
+                                        key={product.id}
+                                        className="border-b hover:bg-gray-50 transition"
                                     >
-                                        Edit
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(p.id)}
-                                        className="px-3 py-1 bg-red-600 text-white rounded-md"
-                                    >
-                                        Delete
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                                        <td className="px-6 py-4 font-medium text-gray-900">
+                                            {product.title}
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-600">
+                                            {product.subtitle || "-"}
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-600">
+                                            {product.type || "-"}
+                                        </td>
+                                        <td className="px-6 py-4 text-right font-medium">
+                                            Rp{product.basePrice.toLocaleString("id-ID")}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex justify-center gap-3">
+                                                {/* Edit Button */}
+                                                <button
+                                                    onClick={() => setEditingProduct(product)}
+                                                    className="p-2 rounded-full hover:bg-blue-100 text-blue-600 transition group"
+                                                    title="Edit Product"
+                                                >
+                                                    <Edit className="w-5 h-5 group-hover:scale-110 transition" />
+                                                </button>
+
+                                                {/* Delete Button */}
+                                                <button
+                                                    onClick={() => handleDelete(product.id)}
+                                                    className="p-2 rounded-full hover:bg-red-100 text-red-600 transition group"
+                                                    title="Delete Product"
+                                                >
+                                                    <Trash className="w-5 h-5 group-hover:scale-110 transition" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             )}
 
+            {/* Modals */}
             {isAdding && (
                 <AddProductModal
                     onClose={() => setIsAdding(false)}
-                    onSave={handleAdd}
+                    onSave={() => {
+                        setIsAdding(false);
+                        fetchProducts();
+                    }}
                 />
             )}
 
@@ -348,7 +250,10 @@ export default function ProductTable() {
                 <EditProductModal
                     product={editingProduct}
                     onClose={() => setEditingProduct(null)}
-                    onSave={handleUpdate}
+                    onSuccess={() => {
+                        setEditingProduct(null);
+                        fetchProducts();
+                    }}
                 />
             )}
         </div>
