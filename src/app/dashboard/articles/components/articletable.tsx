@@ -103,7 +103,6 @@ export default function ArticleTable() {
                         <tr className="bg-gray-100 text-left text-gray-700">
                             <th className="p-3">Title</th>
                             <th className="p-3">Author</th>
-                            <th className="p-3">Content</th>
                             <th className="p-3">Categories</th>
                             <th className="p-3 text-center">Actions</th>
                         </tr>
@@ -120,7 +119,6 @@ export default function ArticleTable() {
                             <tr key={a.id} className="border-b hover:bg-gray-50 transition">
                                 <td className="p-3 font-medium">{a.title}</td>
                                 <td className="p-3">{a.author}</td>
-                                <td className="p-3">{a.content}</td>
                                 <td className="p-3">
                                     {a.categories.length > 0
                                         ? a.categories.map(cat => cat.name).join(", ")
