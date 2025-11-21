@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import { Article } from "./articletable";
+import dynamic from "next/dynamic";
 
 interface Category {
     id: number;
@@ -16,6 +17,8 @@ interface Props {
 }
 
 export default function EditArticleModal({ article, onClose, onSave }: Props) {
+    const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
+
     const [form, setForm] = useState({
         title: article.title || "",
         content: article.content || "",
@@ -150,14 +153,13 @@ export default function EditArticleModal({ article, onClose, onSave }: Props) {
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
-                        <textarea
-                            name="content"
-                            value={form.content}
-                            onChange={handleChange}
-                            rows={6}
-                            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-[#134280] focus:ring-2 focus:ring-[#134280]/20 transition resize-none"
-                            placeholder="Write article content..."
-                        />
+                        <div data-color-mode="light">
+                            <MDEditor
+                                value={form.content}
+                                onChange={(value) => setForm((prev) => ({ ...prev, content: value || "" }))}
+                                height={300}
+                            />
+                        </div>
                     </div>
 
                     <div>

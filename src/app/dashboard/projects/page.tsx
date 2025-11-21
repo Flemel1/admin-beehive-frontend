@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import Swal from "sweetalert2";
 import DashboardLayout from "@/components/dashboardlayouts";
 import ProjectForm from "./components/projectform";
 import ProjectTable from "./components/projecttable";
@@ -14,7 +16,7 @@ export default function ProjectsPage() {
                         Add a new project or view the list of existing projects.
                     </p>
                 </div>
-                
+
                 {/* Add project form */}
                 <ProjectForm onSuccess={() => console.log("Project added!")} />
 

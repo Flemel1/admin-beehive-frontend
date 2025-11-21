@@ -29,6 +29,12 @@ export default function ArticleTable() {
         const fetchArticles = async () => {
             setLoading(true);
             const token = localStorage.getItem("token");
+            if (!token) {
+                Swal.fire("Unauthorized", "Please login first.", "warning");
+                window.location.href = "/login";
+                return;
+            }
+
 
             try {
                 const res = await fetch(`${apiBase}/api/articles`, {

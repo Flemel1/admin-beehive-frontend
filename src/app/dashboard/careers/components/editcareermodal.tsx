@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Swal from "sweetalert2";
+import dynamic from "next/dynamic";
 
 interface Career {
     id: number;
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export default function EditCareerModal({ career, onClose, onSave }: Props) {
+    const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 
     const formatDateForInput = (dateStr: string) => {
         return dateStr.split(" ")[0];
@@ -156,37 +158,35 @@ export default function EditCareerModal({ career, onClose, onSave }: Props) {
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Qualifications</label>
-                        <textarea
-                            name="qualifications"
-                            value={form.qualifications}
-                            onChange={handleChange}
-                            rows={3}
-                            className="w-full border rounded-md px-3 py-2 text-sm"
-                            required
-                        />
+                        <div data-color-mode="light">
+                            <MDEditor
+                                value={form.qualifications}
+                                onChange={(v) => setForm({ ...form, qualifications: v || "" })}
+                                height={200}
+                            />
+                        </div>
                     </div>
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Benefits (Opsional)</label>
-                        <textarea
-                            name="benefits"
-                            value={form.benefits}
-                            onChange={handleChange}
-                            rows={3}
-                            className="w-full border rounded-md px-3 py-2 text-sm"
-                            placeholder="Gaji, BPJS, dll."
-                        />
+                        <div data-color-mode="light">
+                            <MDEditor
+                                value={form.benefits}
+                                onChange={(v) => setForm({ ...form, benefits: v || "" })}
+                                height={180}
+                            />
+                        </div>
                     </div>
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Responsibilities (Opsional)</label>
-                        <textarea
-                            name="responsibilities"
-                            value={form.responsibilities}
-                            onChange={handleChange}
-                            rows={3}
-                            className="w-full border rounded-md px-3 py-2 text-sm"
-                        />
+                        <div data-color-mode="light">
+                            <MDEditor
+                                value={form.responsibilities}
+                                onChange={(v) => setForm({ ...form, responsibilities: v || "" })}
+                                height={180}
+                            />
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

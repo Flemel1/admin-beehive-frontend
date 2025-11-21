@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Project } from "./projecttable";
+import dynamic from "next/dynamic";
 
 interface Dropdown {
     product_services: { id: number; name: string }[];
@@ -15,6 +16,8 @@ interface Props {
 }
 
 export default function EditProjectModal({ project, onClose, onSave }: Props) {
+    const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
+
     const [form, setForm] = useState({
         id: String(project.id),
         title: project.title || "",
@@ -135,14 +138,13 @@ export default function EditProjectModal({ project, onClose, onSave }: Props) {
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                        <textarea
-                            name="description"
-                            value={form.description}
-                            onChange={handleChange}
-                            rows={4}
-                            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-[#134280] focus:ring-2 focus:ring-[#134280]/20 transition resize-none"
-                            required
-                        />
+                        <div data-color-mode="light">
+                            <MDEditor
+                                value={form.description}
+                                onChange={(v) => setForm(prev => ({ ...prev, description: v || "" }))}
+                                height={250}
+                            />
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

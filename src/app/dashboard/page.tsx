@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
     FolderKanban,
@@ -41,13 +42,14 @@ export default function DashboardPage() {
     const [recentProducts, setRecentProducts] = useState<RecentItem[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
+    const API_URL = "http://127.0.0.1:8000";
+    const router = useRouter();
 
     useEffect(() => {
         const fetchData = async () => {
             const token = localStorage.getItem("token");
             if (!token) {
-                setLoading(false);
+                router.push("/login");
                 return;
             }
 

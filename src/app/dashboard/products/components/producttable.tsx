@@ -90,8 +90,10 @@ export default function ProductTable() {
 
     const fetchProducts = async () => {
         const token = localStorage.getItem("token");
+
         if (!token) {
-            Swal.fire("Unauthorized", "Please log in first.", "warning");
+            Swal.fire("Unauthorized", "Please login first.", "warning");
+            window.location.href = "/login";
             return;
         }
 
