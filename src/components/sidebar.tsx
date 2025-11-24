@@ -12,7 +12,7 @@ export default function Sidebar() {
     const [user, setUser] = useState<{ name: string } | null>(null);
 
     const menus = [
-        { name: "Dashboard", icon: LayoutDashboard, path: "/" },
+        { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
         { name: "Projects", icon: FolderKanban, path: "/dashboard/projects" },
         { name: "Articles", icon: FileText, path: "/dashboard/articles" },
         { name: "Careers", icon: Users, path: "/dashboard/careers" },
@@ -20,7 +20,6 @@ export default function Sidebar() {
     ];
 
     useEffect(() => {
-        // ambil data user dari localStorage (disimpan waktu login)
         const userData = localStorage.getItem("user");
         if (userData) {
             setUser(JSON.parse(userData));
@@ -29,13 +28,6 @@ export default function Sidebar() {
 
     const handleLogout = async () => {
         const token = localStorage.getItem("token");
-
-        if (!token) {
-            alert("Anda belum login.");
-            router.push("/login");
-            return;
-        }
-
         try {
             const response = await fetch("http://127.0.0.1:8000/api/logout", {
                 method: "POST",
@@ -51,13 +43,11 @@ export default function Sidebar() {
         } catch (error) {
             console.error("Logout error:", error);
         } finally {
-            // 🔐 bersihkan semua data auth di browser
             localStorage.removeItem("token");
             localStorage.removeItem("user");
 
-            // 🧭 redirect dengan UX halus
             alert("Logout berhasil!");
-            router.replace("/login"); // pakai replace biar ga bisa back ke dashboard
+            router.replace("/login");
         }
     };
 

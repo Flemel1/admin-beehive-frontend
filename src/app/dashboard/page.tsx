@@ -54,7 +54,6 @@ export default function DashboardPage() {
             }
 
             try {
-                // 1. Lakukan semua request dulu
                 const [projRes, artRes, prodRes, careerRes] = await Promise.all([
                     fetch(`${API_URL}/api/projects`, { headers: { Authorization: `Bearer ${token}` } }),
                     fetch(`${API_URL}/api/articles`, { headers: { Authorization: `Bearer ${token}` } }),
@@ -62,13 +61,11 @@ export default function DashboardPage() {
                     fetch(`${API_URL}/api/careers`, { headers: { Authorization: `Bearer ${token}` } }),
                 ]);
 
-                // 2. Baru sekarang baca JSON-nya
                 const projJson = await projRes.json();
                 const artJson = await artRes.json();
                 const prodJson = await prodRes.json();
                 const careerJson = await careerRes.json();
 
-                // 3. Helper biar support paginated atau langsung array
                 const getDataArray = (json: any) => {
                     if (Array.isArray(json)) return json;
                     if (json?.data && Array.isArray(json.data)) return json.data;
@@ -80,7 +77,6 @@ export default function DashboardPage() {
                 const products = getDataArray(prodJson);
                 const careers = getDataArray(careerJson);
 
-                // 4. Update state
                 setStats({
                     totalProjects: projects.length,
                     totalArticles: articles.length,
