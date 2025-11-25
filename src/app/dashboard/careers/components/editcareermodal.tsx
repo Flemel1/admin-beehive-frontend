@@ -21,11 +21,17 @@ interface Props {
     onSave: (updated: Career) => void;
 }
 
-export default function EditCareerModal({ career, onClose, onSave }: Props) {
-    const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
+const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 
-    const formatDateForInput = (dateStr: string) => {
-        return dateStr.split(" ")[0];
+export default function EditCareerModal({ career, onClose, onSave }: Props) {
+
+
+    const formatDateForInput = (dateStr: Date) => {
+        const day = String(dateStr.getUTCDate()).padStart(2, '0');
+        const month = String(dateStr.getUTCMonth() + 1).padStart(2, '0');
+        const year = dateStr.getUTCFullYear();
+
+        return `${year}-${month}-${day}`;
     };
 
     const [form, setForm] = useState({
@@ -36,7 +42,7 @@ export default function EditCareerModal({ career, onClose, onSave }: Props) {
         responsibilities: career.responsibilities ?? "",
         location: career.location,
         work_type: career.work_type,
-        deadline: formatDateForInput(career.deadline),
+        deadline: formatDateForInput(new Date(career.deadline)),
     });
 
     const [loading, setLoading] = useState(false);
@@ -60,7 +66,7 @@ export default function EditCareerModal({ career, onClose, onSave }: Props) {
             responsibilities: career.responsibilities ?? "",
             location: career.location,
             work_type: career.work_type,
-            deadline: formatDateForInput(career.deadline),
+            deadline: career.deadline,
         };
 
         const payload: any = {};
@@ -86,8 +92,6 @@ export default function EditCareerModal({ career, onClose, onSave }: Props) {
                 payload[field] = form[field];
             }
         });
-
-        console.log("PUT Payload:", payload);
 
         try {
             const token = localStorage.getItem("token");
@@ -122,7 +126,7 @@ export default function EditCareerModal({ career, onClose, onSave }: Props) {
 
             const updatedCareer = {
                 ...data.career,
-                deadline: formatDateForInput(data.career.deadline),
+                deadline: formatDateForInput(new Date(data.career.deadline)),
             };
 
             onSave(updatedCareer);
@@ -223,7 +227,7 @@ export default function EditCareerModal({ career, onClose, onSave }: Props) {
                         <input
                             type="date"
                             name="deadline"
-                            value={form.deadline}
+                            value={formatDateForInput(new Date(form.deadline))}
                             onChange={handleChange}
                             className="w-full border rounded-md px-3 py-2 text-sm"
                         />

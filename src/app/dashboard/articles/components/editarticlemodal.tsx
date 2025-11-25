@@ -16,8 +16,9 @@ interface Props {
     onSave: (updated: Article) => void;
 }
 
+const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
+
 export default function EditArticleModal({ article, onClose, onSave }: Props) {
-    const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 
     const [form, setForm] = useState({
         title: article.title || "",
@@ -158,6 +159,7 @@ export default function EditArticleModal({ article, onClose, onSave }: Props) {
                                 value={form.content}
                                 onChange={(value) => setForm((prev) => ({ ...prev, content: value || "" }))}
                                 height={300}
+                                preview="edit"
                             />
                         </div>
                     </div>

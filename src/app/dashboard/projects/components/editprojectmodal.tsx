@@ -15,8 +15,9 @@ interface Props {
     onSave: (updated: Project) => void;
 }
 
+const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
+
 export default function EditProjectModal({ project, onClose, onSave }: Props) {
-    const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 
     const [form, setForm] = useState({
         id: String(project.id),
